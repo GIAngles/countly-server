@@ -1,6 +1,6 @@
 var countlyConfig = {
     mongodb: {
-        host: "localhost",
+        host: "192.168.2.215",
         db: "countly",
         port: 27017,
         max_pool_size: 10,
@@ -44,7 +44,7 @@ var countlyConfig = {
     */
     web: {
         port: 6001,
-        host: "localhost",
+        host: "192.168.2.215",
         use_intercom: true
     },
 	path: "",
