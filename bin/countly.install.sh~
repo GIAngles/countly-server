@@ -19,7 +19,7 @@ echo "
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 #update package index
-sudo rm  -rf /var/lib/apt/lists/*
+sudo rm  /var/lib/apt/lists/*
 apt-get update
 
 apt-get -y install python-software-properties wget g++ build-essential libkrb5-dev
@@ -41,7 +41,7 @@ echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" 
 
 
 #update once more after adding new repos
-sudo rm  -rf /var/lib/apt/lists/*
+sudo rm  /var/lib/apt/lists/*
 apt-get update
 
 #install nginx
