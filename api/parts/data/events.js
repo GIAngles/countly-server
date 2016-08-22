@@ -2,11 +2,107 @@ var countlyEvents = {},
     common = require('./../../utils/common.js'),
     async = require('async'),
     crypto = require('crypto'),
-	plugins = require('../../../plugins/pluginManager.js');
+	plugins = require('../../../plugins/pluginManager.js'), 
+    //countlyConfig = require('../../config.js', 'dont-enclose');
+    ES = require('elasticsearch');
+    elasticClient = new ES.Client({host: 'localhost:9200'});
 
 (function (countlyEvents) {
 
     countlyEvents.processEvents = function(params) {
+        var customizedEvent = new Array();
+        for (var i=0; i < params.qstring.events.length; i++) {
+            var currEvent = params.qstring.events[i];
+            var date = new Date(params.time.timestamp*1000);
+
+            customizedEvent.push({
+                app_id: params.app_id,
+                ip_addr: params.ip_address,
+                timestamp_num: params.time.timestamp,
+                timestamp_dat: date,
+                time_daily: params.time.daily,
+                event: currEvent,
+                app_user: params.app_user,
+                app_user_id: params.app_user._id,
+                app_user_cc: params.app_user.cc,
+            });
+            console.log('cEvent:', customizedEvent[i]);
+            var index_name = 'countly';
+            /* v1.00
+            var objIn = {
+                    index: index_name.concat('_', customizedEvent[i].app_id),
+                    type: 'events',
+                    id: currEvent.key.concat('_', customizedEvent[i].timestamp),
+                    body: customizedEvent[i], 
+            };
+            */
+            //v1.01: better visualize, becoz too many event and too many timestamp at 1 index to manage
+            
+            var objIn = {
+                index: index_name.concat('_', customizedEvent[i].app_id, '_', params.time.daily),
+                type: currEvent.key,
+                id: customizedEvent[i].timestamp_num,
+                timestamp: date,
+                body: customizedEvent[i], 
+            };
+            //console.log('objectIn:', objIn);
+
+            var mapping = {
+                index: objIn.index,
+                updateAllTypes: true,
+                body: {
+                    mappings: {
+                        [objIn.type]: { 
+                            properties: {
+                                event: {
+                                    properties: {
+                                        dur: {
+                                            type : "double"
+                                        },
+                                        key: {
+                                            type : "string",
+                                            index: "not_analyzed" //for better visualization
+                                        },
+                                        segmentation: {
+                                            properties: {
+                                                name:{
+                                                    type : "string",
+                                                    index: "not_analyzed" //for better visualization
+                                                },
+                                                TYPE:{
+                                                    type : "string",
+                                                    index: "not_analyzed" //for better visualization
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            //console.log('objectIn:', mapping);
+            
+            elasticClient.indices.create(
+                mapping,
+                function (error, response) {
+                    //console.log('something happen');
+                    //console.log('Elastic indices create error:', error);
+                    //console.log('Elastic indices create response:', response);
+                    elasticClient.index(
+                        objIn, 
+                        function (error, response) {
+                            //console.log('something happen');
+                            //console.log('Elastic index error:', error);
+                            //console.log('Elastic index response:', response);   
+                        }
+                    );   
+                }
+            )
+                
+        }
+
         common.db.collection("events").findOne({'_id':params.app_id}, {list:1, segments:1}, function (err, eventColl) {
             var appEvents = [],
                 appSegments = {},
@@ -78,6 +174,11 @@ var countlyEvents = {},
     };
 
     function processEvents(appEvents, appSegments, appSgValues, params) {
+        //console.log('appEvents: ', appEvents);
+        //console.log('appSegments: ', appSegments);
+        //console.log('appSgValues: ', appSgValues);
+        //console.log('params: ', params);
+        
         var events = [],
             eventCollections = {},
             eventSegments = {},
@@ -119,7 +220,8 @@ var countlyEvents = {},
             }
 
             // Create new collection name for the event
-            eventCollectionName = "events" + crypto.createHash('sha1').update(shortEventName + params.app_id).digest('hex');
+            var extra = crypto.createHash('sha1').update(shortEventName + params.app_id).digest('hex');
+            eventCollectionName = "events" + extra;  
 
             eventHashMap[eventCollectionName] = shortEventName;
 
