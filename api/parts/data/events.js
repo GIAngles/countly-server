@@ -47,9 +47,10 @@ var countlyEvents = {},
             };
             //console.log('objectIn:', objIn);
 
+            /*not stable
             var mapping = {
                 index: objIn.index,
-                updateAllTypes: true,
+                //updateAllTypes: true,
                 body: {
                     mappings: {
                         [objIn.type]: { 
@@ -72,6 +73,10 @@ var countlyEvents = {},
                                                 TYPE:{
                                                     type : "string",
                                                     index: "not_analyzed" //for better visualization
+                                                },
+                                                IMG_ID:{
+                                                    type : "string",
+                                                    index: "not_analyzed" //for better visualization
                                                 }
                                             }
                                         }
@@ -82,8 +87,12 @@ var countlyEvents = {},
                     }
                 }
             };
+            */
             //console.log('objectIn:', mapping);
             
+
+            // not stable
+            /*
             elasticClient.indices.create(
                 mapping,
                 function (error, response) {
@@ -100,7 +109,75 @@ var countlyEvents = {},
                     );   
                 }
             )
-                
+            */
+
+            //v2.00: the flow of elastic have to make sure the command run in order
+            // in this ver we're using callback function to do the trick
+            var mapping = {
+                index: objIn.index,
+                type: objIn.type,
+                //updateAllTypes: true,
+                body: {
+                    [objIn.type]: {
+                        properties: {
+                            event: {
+                                properties: {
+                                    dur: {
+                                        type : "double"
+                                    },
+                                    key: {
+                                        type : "string",
+                                        index: "not_analyzed" //for better visualization
+                                    },
+                                    segmentation: {
+                                        properties: {
+                                            name:{
+                                                type : "string",
+                                                index: "not_analyzed" //for better visualization
+                                            },
+                                            TYPE:{
+                                                type : "string",
+                                                index: "not_analyzed" //for better visualization
+                                            },
+                                            IMG_ID:{
+                                                type : "string",
+                                                index: "not_analyzed" //for better visualization
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }        
+                    }
+                }
+            };
+
+
+            elasticClient.indices.create({
+                    index: objIn.index
+                },
+                function (error, response) {
+                    //console.log('something happen');
+                    console.log('Elastic create error:', error);
+                    console.log('Elastic create response:', response);
+                    elasticClient.indices.putMapping(
+                        mapping,
+                        function (error, response) {
+                            //console.log('something happen');
+                            console.log('Elastic putMapping error:', error);
+                            console.log('Elastic putMapping response:', response);
+                            elasticClient.index(
+                                objIn, 
+                                function (error, response) {
+                                    //console.log('something happen');
+                                    console.log('Elastic index error:', error);
+                                    console.log('Elastic index response:', response);   
+                                }
+                            );    
+                        }
+                    );   
+                }
+            );
         }
 
         common.db.collection("events").findOne({'_id':params.app_id}, {list:1, segments:1}, function (err, eventColl) {
