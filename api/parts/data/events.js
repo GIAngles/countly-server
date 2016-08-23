@@ -113,6 +113,7 @@ var countlyEvents = {},
 
             //v2.00: the flow of elastic have to make sure the command run in order
             // in this ver we're using callback function to do the trick
+            /*
             var mapping = {
                 index: objIn.index,
                 type: objIn.type,
@@ -151,7 +152,59 @@ var countlyEvents = {},
                     }
                 }
             };
+            */
 
+            //v.210: improve both visualization and query by add both analyzed string and not analyzed
+            //(for popular fields only)
+            var mapping = {
+                index: objIn.index,
+                type: objIn.type,
+                body: {
+                    [objIn.type]: {
+                        properties: {
+                            event: {
+                                properties: {
+                                    dur: {
+                                        type : "double"
+                                    },
+                                    key: {
+                                        type : "string",
+                                        index: "not_analyzed" 
+                                    },
+                                    key_ana: {
+                                        type : "string"
+                                    },
+                                    segmentation: {
+                                        properties: {
+                                            name:{
+                                                type : "string",
+                                                index: "not_analyzed" 
+                                            },
+                                            TYPE:{
+                                                type : "string",
+                                                index: "not_analyzed" 
+                                            },
+                                            IMG_ID:{
+                                                type : "string",
+                                                index: "not_analyzed" 
+                                            },
+                                            name_ana:{
+                                                type : "string"
+                                            },
+                                            TYPE_ana:{
+                                                type : "string"
+                                            },
+                                            IMG_ID_ana:{
+                                                type : "string" 
+                                            },
+                                        }
+                                    }
+                                }
+                            }
+                        }        
+                    }
+                }
+            };
 
             elasticClient.indices.create({
                     index: objIn.index
