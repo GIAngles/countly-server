@@ -205,6 +205,14 @@ var countlyEvents = {},
                     }
                 }
             };
+            //any added element *_ana should be copied by their original 
+            //we added *_ana for analyze, search ... by words purpose
+            //and the original one is for simple visualize (statistical overeview only, not deep analytics)
+            if (objIn.body.event.segmentation != undefined) {
+                objIn.body.event.segmentation.name_ana = objIn.body.event.segmentation.name;
+                objIn.body.event.segmentation.TYPE_ana = objIn.body.event.segmentation.TYPE;
+                objIn.body.event.segmentation.IMG_ID_ana = objIn.body.event.segmentation.IMG_ID;
+            }
 
             elasticClient.indices.create({
                     index: objIn.index
